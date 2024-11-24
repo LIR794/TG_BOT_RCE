@@ -14,6 +14,7 @@ build:
 # Разворачивание контейнера
 deploy:
   stage: deploy
+  image: docker:latest
   script:
     - docker stop telegram_bot || true
     - docker rm telegram_bot || true
