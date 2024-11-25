@@ -1,8 +1,27 @@
 stages:
   - build
+  - deploy
 
 build:
   stage: build
   script:
-    - echo "Building project..."
-    - ls -la
+    - docker build -t lisrui/tg-bot:latest /bot/Dockerfile
+  only:
+    - main
+  tags:
+    - docker
+
+# Разворачивание контейнера
+deploy:
+  stage: deploy
+  image: docker:latest
+  script:
+    - docker stop telegram_bot || true
+    - docker rm telegram_bot || true
+    - docker run -v /bot/data:/app/data -d --name telegram_bot --restart=always lisrui/tg-bot:latest 
+  environment:
+    name: production
+  only:
+    - main
+  tags:
+    - docker
