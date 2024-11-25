@@ -8,8 +8,6 @@ build:
     - docker build -t lisrui/tg-bot:latest /bot/Dockerfile
   only:
     - main
-  tags:
-    - docker
 
 # Разворачивание контейнера
 deploy:
@@ -23,5 +21,3 @@ deploy:
     name: production
   only:
     - main
-  tags:
-    - docker
