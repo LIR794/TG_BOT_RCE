@@ -1,5 +1,5 @@
 fuzzywuzzy
-psycopg2
+psycopg2==2.9.10
 pyTelegramBotAPI
 python-dotenv
 Requests
