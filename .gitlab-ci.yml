@@ -5,7 +5,7 @@ stages:
 build:
   stage: build
   script:
-    - docker build -t lisrui/tg-bot:latest /bot/Dockerfile
+    - docker build -t lisrui/tg-bot:latest /bot
   only:
     - main
 
