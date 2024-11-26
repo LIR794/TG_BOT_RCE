@@ -5,7 +5,7 @@ stages:
 build:
   stage: build
   script:
-    - cp "${app_env}"  .
+    - cp "${app_env}"  ./.env
     - docker build -t lisrui/tg-bot:latest .
   only:
     - main
@@ -17,7 +17,7 @@ deploy:
   script:
     - docker stop telegram_bot || true
     - docker rm telegram_bot || true
-    - docker run -v /bot/data:/app/data -d --name telegram_bot --restart=always lisrui/tg-bot:latest 
+    - docker run -d --name telegram_bot --restart=always lisrui/tg-bot:latest 
   environment:
     name: production
   only:
