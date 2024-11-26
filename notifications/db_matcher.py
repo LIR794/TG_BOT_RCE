@@ -4,7 +4,7 @@ import json
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv("/app/.env")
 
 connection_pool = pool.SimpleConnectionPool(
     minconn=1,  

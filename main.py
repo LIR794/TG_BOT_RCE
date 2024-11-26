@@ -17,7 +17,7 @@ from telebot import types
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 
-load_dotenv()
+load_dotenv("/app/.env")
 
 token = os.getenv('bot_token')
 bot = telebot.TeleBot(token)

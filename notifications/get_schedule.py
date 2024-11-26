@@ -2,7 +2,7 @@ from psycopg2 import pool
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv("/app/.env")
 
 db_pool = pool.SimpleConnectionPool(
     minconn=1,  
