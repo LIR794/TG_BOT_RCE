@@ -5,7 +5,8 @@ stages:
 build:
   stage: build
   script:
-    - docker build -t lisrui/tg-bot:latest /bot
+    - cp "${app_env}"  .
+    - docker build -t lisrui/tg-bot:latest .
   only:
     - main
 
