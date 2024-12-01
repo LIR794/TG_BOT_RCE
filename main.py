@@ -148,64 +148,56 @@ def handle_message(message):
         bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(notifications_status))
     
     #Пары
-    elif re.match(r'^\s*пары\s*$', message.text, re.IGNORECASE):
+    elif re.match(r'пары', message.text, re.IGNORECASE):
+
+        date_now = datetime.datetime.now()
+        current_date = date_now.strftime('%d.%m.%Y')
+        tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
+
+        message_date = re.search(r'(\d{2}\.\d{2})(?:\.(\d{4}))?',message.text, re.IGNORECASE)
+
         if chat_group is None:
             bot.send_message(chat_id, f"У вас нет отслеживаемой группы.", reply_markup=back_button)
             bot.send_message(chat_id, f"Вы хотите установить её?", reply_markup=markup_set_group)
             bot.register_next_step_handler(message, process_group_input, group_list)
-        else:
-            bot.send_message(chat_id, "Выберите нужную дату", reply_markup=markup_pairs)
-            
-    elif re.match(r'пары\s*(на?\s*)?сегодня', message.text, re.IGNORECASE):
-        date_now = datetime.datetime.now()
-        current_date = date_now.strftime('%d.%m.%Y')
-        schedule = get_shedule(current_date,chat_group)
-        bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')
-    
-    elif re.match(r'пары\s*(на?\s*)?завтра', message.text, re.IGNORECASE):
-        date_now = datetime.datetime.now()
-        tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
-        schedule = get_shedule(tommorow,chat_group)
-        bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')
+            return
+        
+        target_date = None
 
-    # Регулярное выражение для обработки даты с необязательным годом и группы
-    match_groups = re.match(r'пары\s*(?:на\s*)?(\d{2}\.\d{2})(?:\.(\d{4}))?(?:\s+для\s+|\s+)?([А-Яа-яA-Za-z0-9\-]*)?$', message.text, re.IGNORECASE)
+        # Определяем, какая дата используется
+        if re.findall(r'сегодня', message.text, re.IGNORECASE):
+            target_date = current_date
+            group_match = re.search(r'сегодня\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+        elif re.findall(r'завтра', message.text, re.IGNORECASE):
+            target_date = tommorow
+            group_match = re.search(r'завтра\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+            print(group_match)
+        elif message_date:
+            target_date = message_date.group(1)
+            group_match = re.search(r'\d{2}\.\d{2}\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+            if not message_date.group(2):
+                year = datetime.datetime.now().year
+                target_date = f"{target_date}.{year}"
+                
 
-    if match_groups:
-        day_month = match_groups.group(1)
-        year = match_groups.group(2)
-        group_name = match_groups.group(3).upper() if match_groups.group(3) else chat_group 
+        if group_match:
+            # Извлекаем группу из сообщения
+            chat_group = group_match.group(1)
+            print(chat_group)
+            # Пытаемся найти наиболее похожее совпадение
+            best_match = process.extractOne(chat_group, group_list, score_cutoff=80)
+            if best_match:
+                chat_group = best_match[0]  # Устанавливаем наиболее подходящую группу
+            else:
+                # Если группа не найдена
+                bot.send_message(chat_id, f"Группа '{chat_group}' не найдена в списке.", reply_markup=back_button)
+                return  # Выходим из обработчика, так как обработка невозможна
 
-        # Если год не указан, используем текущий
-        if not year:
-            year = datetime.datetime.now().year
-        else:
-            year = int(year)
-
-        if not group_name:
-            group_name = chat_group
-        # Формируем полную дату
-        date_str = f"{day_month}.{year}"
-
-        # Используем fuzzywuzzy для поиска наилучшего совпадения группы
-        best_match = process.extractOne(group_name, group_list, score_cutoff=80)  # Порог схожести 80%
-
-        # Проверяем, найдено ли совпадение
-        if best_match:
-            matched_group, similarity_score = best_match
-            try:
-                date_obj = datetime.datetime.strptime(date_str, '%d.%m.%Y')
-                formatted_date = date_obj.strftime('%d.%m.%Y')
-                schedule = get_shedule(formatted_date, matched_group)
-                bot.send_message(chat_id, f"{schedule}", parse_mode='HTML')
-            except ValueError:
-                bot.send_message(chat_id, "Неправильный формат даты. Пожалуйста, используйте формат ДД.ММ.ГГГГ.")
-        else:
-            # Если совпадений нет, отправляем сообщение о несоответствии
-            bot.send_message(chat_id, f"Группа '{group_name}' не найдена в списке.", reply_markup=back_button)
-            
-
-    #Звонки
+        # Получаем расписание для указанной даты и группы
+        schedule = get_shedule(target_date, chat_group)
+        bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')  
+         
+   #Звонки
     
     elif re.match(r'^\s*звонки\s*$', message.text, re.IGNORECASE):
             bot.send_message(chat_id, "Выберите нужную дату", reply_markup=markup_bells)
