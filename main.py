@@ -164,34 +164,43 @@ def handle_message(message):
         
         target_date = None
 
-        # Определяем, какая дата используется
         if re.findall(r'сегодня', message.text, re.IGNORECASE):
             target_date = current_date
             group_match = re.search(r'сегодня\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+            if group_match:
+                chat_group = group_match.group(1)
         elif re.findall(r'завтра', message.text, re.IGNORECASE):
             target_date = tommorow
             group_match = re.search(r'завтра\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
-            print(group_match)
+            if group_match:
+                chat_group = group_match.group(1)
         elif message_date:
             target_date = message_date.group(1)
-            group_match = re.search(r'\d{2}\.\d{2}\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+
             if not message_date.group(2):
                 year = datetime.datetime.now().year
                 target_date = f"{target_date}.{year}"
-                
-
-        if group_match:
-            # Извлекаем группу из сообщения
-            chat_group = group_match.group(1)
-            print(chat_group)
-            # Пытаемся найти наиболее похожее совпадение
-            best_match = process.extractOne(chat_group, group_list, score_cutoff=80)
-            if best_match:
-                chat_group = best_match[0]  # Устанавливаем наиболее подходящую группу
             else:
-                # Если группа не найдена
-                bot.send_message(chat_id, f"Группа '{chat_group}' не найдена в списке.", reply_markup=back_button)
-                return  # Выходим из обработчика, так как обработка невозможна
+                target_date = f"{target_date}.{message_date.group(2)}"        
+            
+            try:
+                target_date_obj = datetime.datetime.strptime(target_date, '%d.%m.%Y')
+            except ValueError:
+                bot.send_message(chat_id, f"Ошибка: Некорректная дата {target_date}.", reply_markup=back_button)
+                target_date = None
+                return
+
+            group_match = re.search(r'\d{2}\.\d{2}(?:\.\d{4})?\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+            if group_match:
+                chat_group = group_match.group(1)
+                print(f"Группа: {chat_group}")
+
+        best_match = process.extractOne(chat_group, group_list, score_cutoff=80)
+        if best_match:
+            chat_group = best_match[0]  # Устанавливаем наиболее подходящую группу
+        else:
+            bot.send_message(chat_id, f"Группа '{chat_group}' не найдена в списке.", reply_markup=back_button)
+            return
 
         # Получаем расписание для указанной даты и группы
         schedule = get_shedule(target_date, chat_group)
