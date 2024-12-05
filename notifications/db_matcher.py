@@ -25,7 +25,7 @@ def check_changes(date, groups_to_send):
     }
 
     # Запрос данных расписания
-    response = requests.get(f"https://api.s.iswebdev.ru/api/schedules/public?date={date}", headers=header)
+    response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public?date={date}", headers=header)
 
     if response.status_code != 200:
         print(f"Ошибка при загрузке данных: {response.status_code}")

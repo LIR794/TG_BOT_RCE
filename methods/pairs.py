@@ -244,6 +244,6 @@ def get_shed_by_teacher(date, teacher):
     for lesson in lessons_list:
         result += f"{lesson['index_emoji']} {lesson['subject']} | {lesson['cabinet']} | {lesson['group_name']}\n\n"
 
-    result += f"\nДата <b>{date}</b>"
+    result += f"Дата <b>{date}</b>"
     
     return result

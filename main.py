@@ -286,7 +286,7 @@ def handle_message(message):
         schedule = get_shedule(target_date, chat_group)
         bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')  
            
-    #Звонки
+#Звонки
     
     elif re.match(r'^\s*звонки\s*$', message.text, re.IGNORECASE):
             bot.send_message(chat_id, "Выберите нужную дату", reply_markup=markup_bells)
@@ -294,13 +294,13 @@ def handle_message(message):
     elif re.match(r'звонки\s*(на?\s*)?сегодня', message.text, re.IGNORECASE):
         date_now = datetime.datetime.now()
         current_date = date_now.strftime('%d.%m.%Y')
-        bells = get_bells(current_date, "")
+        bells = get_bells(current_date)
         bot.send_message(chat_id, f"{bells}", reply_markup=markup_bells, parse_mode='HTML')
     
     elif re.match(r'звонки\s*(на?\s*)?завтра', message.text, re.IGNORECASE):
         date_now = datetime.datetime.now()
         tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
-        bells = get_bells(tommorow, "")
+        bells = get_bells(tommorow)
         bot.send_message(chat_id, f"{bells}", reply_markup=markup_bells, parse_mode='HTML')    
 
     #Уведомления
@@ -443,29 +443,16 @@ def process_group_input(message, group_list, initial_message_id):
 
 # Задачи уведомлений
 
-def job_notify_today():
-    date_now = datetime.datetime.now()
-
-    current_date  = date_now.strftime('%d.%m.%Y')
-    
-    groups = []
-    check_changes(current_date,groups)
-
-    for group in groups:
-        chats = []
-        get_chat_notify(group, chats)
-
-        if not chats or any(chat is None for chat in chats):
-            continue
-        schedule = get_change(current_date,group) 
-
-        for chat in chats:
-            chat_id = chat[0]
-            bot.send_message(chat_id, f"На сегодня {schedule}", parse_mode='HTML')
-
 def job_notify_tommorow():
+    
     date_now = datetime.datetime.now()
 
+    start_hour = 9
+    end_hour = 23
+
+    if not (start_hour <= date_now.hour < end_hour):
+        return
+    
     tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')  
     groups = []
     check_changes(tommorow,groups)
@@ -492,7 +479,6 @@ def job_bells_tommorow():
 
 
 def run_scheduler():
-    schedule.every(30).minutes.do(job_notify_today)
     schedule.every(30).minutes.do(job_notify_tommorow)
     while True:
         schedule.run_pending()
