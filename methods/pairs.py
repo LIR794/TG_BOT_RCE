@@ -1,12 +1,11 @@
 import requests
 
 def get_groups(groups):    
-    # Заголовки для запроса
+
     header = {
         "Accept": "application/json",
     }
 
-    # Запрос данных расписания
     response = requests.get("https://апи.пары.ркэ.рф/api/groups/public?", headers=header)
 
     data = response.json()
@@ -14,22 +13,31 @@ def get_groups(groups):
     for subj in data:
         groups.append(subj["name"])
 
-def get_bells(date,building):
+def get_teachers(teachers):
+
+    header = {
+        "Accept": "application/json",
+    }
+
+    response = requests.get("https://апи.пары.ркэ.рф/api/teachers", headers=header)
+
+    data = response.json()
+
+    for subj in data:
+        teachers.append(subj["name"])
+
+def get_bells(date):
     header = {
         "Accept": "application/json",
     }
 
     params = {
         "date": date,
-        "building":building
     }
 
     response = requests.get("https://апи.пары.ркэ.рф/api/bells/public", headers=header, params=params)
     
     data = response.json()
-
-    if isinstance(data, dict) and "message" in data:
-        return "Выходной" 
 
     index_to_emoji = {
         "0": "0️⃣",
@@ -177,4 +185,65 @@ def get_shedule(date,group):
             result += f"{lesson['Номер пары']} {lesson['Название пары']}\n"
     result += f"\n<b>{group_data['Дата']}</b>"
 
+    return result
+
+def get_shed_by_teacher(date, teacher):    
+    header = {
+        "Accept": "application/json",
+    }
+    
+    params = {
+        "date": date,
+        "teacher": teacher
+    }
+
+    response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public", headers=header, params=params)
+    data = response.json()
+    
+    if not data.get('schedules'):
+        return "Выходной" 
+    
+    result = f"Пары у преподавателя: {teacher}\n\n"
+    lessons_list = []
+
+    for schedule in data['schedules']:
+        group_name = schedule.get('group_name', '')
+        
+        for lesson in schedule['lessons']:
+            index = str(lesson.get('index', ''))
+            cabinet = lesson.get('cabinet', '').strip() or '-'  # Если кабинет пустой, используем "-"
+            subject = lesson.get('subject_name', lesson.get('message', ''))  # Используем `message`, если `subject_name` отсутствует
+            
+            # Преобразуем номер пары в эмодзи
+            index_to_emoji = {
+                "0": "0️⃣",
+                "1": "1️⃣",
+                "2": "2️⃣",
+                "3": "3️⃣",
+                "4": "4️⃣",
+                "5": "5️⃣",
+                "6": "6️⃣",
+                "7": "7️⃣"
+            }
+            index_emoji = index_to_emoji.get(index, index)
+            
+            # Добавляем данные урока в общий список
+            if subject:
+                lessons_list.append({
+                    "index": int(index),  # Для сортировки
+                    "index_emoji": index_emoji,
+                    "subject": subject,
+                    "cabinet": cabinet,
+                    "group_name": group_name
+                })
+
+    # Сортируем уроки по индексу
+    lessons_list.sort(key=lambda x: x['index'])
+
+    # Формируем результат
+    for lesson in lessons_list:
+        result += f"{lesson['index_emoji']} {lesson['subject']} | {lesson['cabinet']} | {lesson['group_name']}\n\n"
+
+    result += f"\nДата <b>{date}</b>"
+    
     return result

@@ -10,10 +10,11 @@ from functools import wraps
 from dotenv import load_dotenv
 from methods.messages import start_message, help_message, buildings
 from methods.db import add_chat, set_group, set_notifications, get_active_group, get_notifications_status
-from methods.pairs import get_groups, get_shedule, get_bells
+from methods.pairs import get_groups, get_teachers, get_shedule, get_shed_by_teacher, get_bells
 from notifications.db_matcher import check_changes
 from notifications.get_schedule import get_chat_notify, get_change
 from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 
@@ -138,16 +139,95 @@ def handle_message(message):
 
     chat_id = message.chat.id
     chat_group = get_active_group(chat_id)
-
+    
+    teacher = None
+    target_date = None
+    
     notifications_status = get_notifications_status(chat_id)
 
     group_list = []
     get_groups(group_list)
 
+    teachers_list = []
+    get_teachers(teachers_list)
+    
     if message.text == "Назад":
         bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(notifications_status))
+  
+
+    elif re.match(r'Преподаватель', message.text, re.IGNORECASE):
+        
+        date_now = datetime.datetime.now()
+        current_date = date_now.strftime('%d.%m.%Y')
+        tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
+        
+        teacher = None
+        target_date = None 
+        message_date = None
+
+        teacher_match = re.search(r'Преподаватель\s+([а-яё]+)', message.text, re.IGNORECASE)
+        message_date = re.search(r'(\d{2}\.\d{2})(?:\.(\d{4}))?', message.text, re.IGNORECASE)
+
+        if teacher_match:
+            teacher = teacher_match.group(1).strip()
+        else:
+            bot.send_message(chat_id, "Не удалось найти имя преподавателя в запросе.", reply_markup=back_button)
+            return
     
-    #Пары
+        if re.search(r'сегодня', message.text, re.IGNORECASE):
+            target_date = current_date
+        elif re.search(r'завтра', message.text, re.IGNORECASE):
+            target_date = tommorow
+        elif message_date:
+            target_date = message_date.group(1)
+            if not message_date.group(2):
+                year = datetime.datetime.now().year
+                target_date = f"{target_date}.{year}"
+            else:
+                target_date = f"{target_date}.{message_date.group(2)}"
+
+            try:
+                datetime.datetime.strptime(target_date, '%d.%m.%Y')
+            except ValueError:
+                bot.send_message(chat_id, f"Ошибка: Некорректная дата {target_date}.", reply_markup=back_button)
+                return
+
+        # Если дата или преподаватель не указаны, выводим соответствующее сообщение
+        if not teacher:
+            bot.send_message(chat_id, "Пожалуйста, укажите фамилию преподавателя.")
+            return
+
+        if not target_date:
+            bot.send_message(chat_id, "Пожалуйста, укажите дату (сегодня, завтра или конкретную).")
+            return
+        
+        # Находим наиболее подходящую фамилию преподавателя
+        all_matches = process.extract(teacher, teachers_list, scorer=fuzz.ratio)
+        best_match = [match for match in all_matches if match[1] >= 70]
+
+        if not best_match:
+            bot.send_message(chat_id, f"Преподаватель '{teacher}' не найден.", reply_markup=back_button)
+            return
+        elif len(best_match) > 1:
+            # Если найдено несколько совпадений, предлагаем уточнить
+            markup = InlineKeyboardMarkup()
+            for match in best_match:
+                teacher_name = match[0]  # Имя преподавателя из списка
+                similarity = match[1]   # Уровень схожести (процент)
+                markup.add(InlineKeyboardButton(text=f"{teacher_name}", callback_data=f"select_teacher:{teacher_name}:{target_date}"))
+            bot.send_message(chat_id, "Уточните, пожалуйста, преподавателя:", reply_markup=markup)
+            return
+        else:
+            # Если найден только один преподаватель
+            teacher = best_match[0][0]  # Имя единственного совпадения
+
+        # Получаем расписание для преподавателя на указанную дату
+        schedule = get_shed_by_teacher(target_date, teacher)
+        if schedule:
+            bot.send_message(chat_id, f"{schedule}", parse_mode='HTML')
+            return
+
+#Пары   
     elif re.match(r'пары', message.text, re.IGNORECASE):
 
         date_now = datetime.datetime.now()
@@ -204,9 +284,8 @@ def handle_message(message):
 
         # Получаем расписание для указанной даты и группы
         schedule = get_shedule(target_date, chat_group)
-        bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')   
-            
-
+        bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')  
+           
     #Звонки
     
     elif re.match(r'^\s*звонки\s*$', message.text, re.IGNORECASE):
@@ -259,6 +338,24 @@ def handle_message(message):
             bot.register_next_step_handler(message, process_group_input, group_list)
 
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith("select_teacher:"))
+def handle_select_teacher(call):
+
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+
+    data = call.data.split(":")  # Разделяем callback_data
+    teacher_name = data[1]       # Имя преподавателя
+    target_date = data[2]        # Дата из callback_data
+
+    bot.delete_message(chat_id, message_id)
+
+    # Получаем расписание для выбранного преподавателя
+    schedule = get_shed_by_teacher(target_date, teacher_name)
+    if schedule:
+        bot.send_message(chat_id,schedule, parse_mode='HTML')
+        return
+
 @bot.callback_query_handler(func=lambda call: True)
 @log_request
 def answer(call):
@@ -266,20 +363,21 @@ def answer(call):
     get_groups(group_list)
     if call.data == 'change_group':
 
-        bot.send_message(call.message.chat.id, 
+        sent_message = bot.send_message(call.message.chat.id, 
                          "Введите группу для отслеживания изменений или нажмите 'Назад' для выхода в меню.", 
                          reply_markup=back_button)
-        
         bot.register_next_step_handler(call.message, 
                                        process_group_input, 
-                                       group_list)
+                                       group_list,
+                                       sent_message.message_id
+                                       )
     elif call.data == "back_group":
         bot.edit_message_text(
             text="Действие отменено",
             chat_id=call.message.chat.id,  # Указан chat_id
             message_id=call.message.message_id,  # Указан message_id
             reply_markup=None
-        )
+        )   
 
 # Обработка ввода группы
 def is_valid_message(message):
@@ -300,7 +398,7 @@ def is_valid_message(message):
         return True
     return False
 
-def process_group_input(message, group_list):
+def process_group_input(message, group_list, initial_message_id):
     chat_id = message.chat.id
     group = message.text.strip()
 
@@ -309,12 +407,25 @@ def process_group_input(message, group_list):
     # Проверяем сообщение на валидность
     if not is_valid_message(message):
         bot.send_message(chat_id, "Неправильая форма запроса.", reply_markup=back_button)
-        bot.register_next_step_handler(message, process_group_input, group_list)
+        bot.register_next_step_handler(message, process_group_input, group_list, initial_message_id)
         return
 
     group_normalized = group.replace(" ", "").replace("-", "").upper()
     
     if group == "Назад":
+        # Изменяем изначальное сообщение
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=initial_message_id-1,
+            text="Действие отменено.",
+            reply_markup=None
+        )
+        bot.delete_message(
+            chat_id=chat_id, 
+            message_id=initial_message_id
+            )
+
+        # Отправляем новое сообщение с главным меню
         bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(notifications_status))
     else:
         # Найдем наиболее похожую группу из списка
