@@ -403,15 +403,16 @@ def is_valid_message(message):
 
 def process_group_input(message, group_list, initial_message_id):
     chat_id = message.chat.id
-    group = message.text.strip()
-
-    notifications_status = get_notifications_status(chat_id)
 
     # Проверяем сообщение на валидность
     if not is_valid_message(message):
         bot.send_message(chat_id, "Неправильая форма запроса.", reply_markup=back_button)
         bot.register_next_step_handler(message, process_group_input, group_list, initial_message_id)
         return
+
+    group = message.text.strip()
+
+    notifications_status = get_notifications_status(chat_id)
 
     group_normalized = group.replace(" ", "").replace("-", "").upper()
     
