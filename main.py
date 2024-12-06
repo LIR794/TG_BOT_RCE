@@ -381,6 +381,11 @@ def answer(call):
 
 # Обработка ввода группы
 def is_valid_message(message):
+
+    # Проверка на стикеры и файлы
+    if message.sticker or message.document or message.photo:
+        return False
+    
     # Проверяем, что сообщение не пустое и не состоит только из символов, стикеров, ссылок или файлов
     if message.text:
         # Если сообщение состоит только из пробелов или знаков препинания, игнорируем его
@@ -391,9 +396,7 @@ def is_valid_message(message):
         if re.match(r'http[s]?://', message.text):
             return False
         
-        # Проверка на стикеры и файлы
-        if message.sticker or message.document or message.photo:
-            return False
+
         
         return True
     return False
