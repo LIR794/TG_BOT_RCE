@@ -10,9 +10,9 @@ from functools import wraps
 from dotenv import load_dotenv
 from methods.messages import start_message, help_message, buildings
 from methods.db import add_chat, set_group, set_notifications, get_active_group, get_notifications_status
-from methods.pairs import get_groups, get_teachers, get_shedule, get_shed_by_teacher, get_bells
-from notifications.db_matcher import check_changes
-from notifications.get_schedule import get_chat_notify, get_change
+from methods.pairs import get_groups, get_teachers, get_shedule, get_shed_by_teacher, get_bells, get_shed_by_cab
+from notifications.db_matcher import check_changes, bells_changes
+from notifications.get_schedule import get_chat_notify_by_group, get_chat_notify, get_change
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from fuzzywuzzy import fuzz
@@ -70,7 +70,7 @@ markup_info.add(btn_back)
 # Inline-клавиатура для смены группы
 markup_change_group = types.InlineKeyboardMarkup()
 btn_change_group = types.InlineKeyboardButton(text='Сменить', callback_data="change_group")
-inline_back = types.InlineKeyboardButton(text='Назад', callback_data="back_group")
+inline_back = types.InlineKeyboardButton('Назад', callback_data="back_group")
 markup_change_group.add(btn_change_group)
 markup_change_group.add(inline_back)
 
@@ -154,7 +154,7 @@ def handle_message(message):
     if message.text == "Назад":
         bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(notifications_status))
   
-
+#Преподаватель
     elif re.match(r'Преподаватель', message.text, re.IGNORECASE):
         
         date_now = datetime.datetime.now()
@@ -238,8 +238,8 @@ def handle_message(message):
 
         if chat_group is None:
             bot.send_message(chat_id, f"У вас нет отслеживаемой группы.", reply_markup=back_button)
-            bot.send_message(chat_id, f"Вы хотите установить её?", reply_markup=markup_set_group)
-            bot.register_next_step_handler(message, process_group_input, group_list)
+            sent_message = bot.send_message(chat_id, f"Вы хотите установить её?", reply_markup=markup_set_group)
+            bot.register_next_step_handler(message, process_group_input, group_list, sent_message.message_id)
             return
         
         if re.findall(r'сегодня', message.text, re.IGNORECASE):
@@ -285,7 +285,50 @@ def handle_message(message):
         # Получаем расписание для указанной даты и группы
         schedule = get_shedule(target_date, chat_group)
         bot.send_message(chat_id, f"{schedule}", reply_markup=markup_pairs, parse_mode='HTML')  
-           
+       
+#Кабинет
+    elif re.match(r'кабинет', message.text, re.IGNORECASE):
+
+        date_now = datetime.datetime.now()
+        current_date = date_now.strftime('%d.%m.%Y')
+        tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')      
+
+        message_date = re.search(r'(\d{2}\.\d{2})(?:\.(\d{4}))?', message.text, re.IGNORECASE)
+
+        # Определяем кабинет из сообщения
+        cabinet_match = re.search(r'\b(?:каб|кабинет|лаб)\b\s+(\S+)', message.text, re.IGNORECASE)
+        if not cabinet_match:
+            bot.send_message(chat_id, "Не удалось определить кабинет. Укажите корректный формат (например, 'кабинет 203').", reply_markup=back_button)
+            return
+        
+        cabinet = cabinet_match.group(1).strip()
+
+        # Определяем дату
+        if re.findall(r'сегодня', message.text, re.IGNORECASE):
+            target_date = current_date
+        elif re.findall(r'завтра', message.text, re.IGNORECASE):
+            target_date = tommorow
+        elif message_date:
+            target_date = message_date.group(1)
+            if not message_date.group(2):
+                year = datetime.datetime.now().year
+                target_date = f"{target_date}.{year}"
+            else:
+                target_date = f"{target_date}.{message_date.group(2)}"
+            try:
+                target_date_obj = datetime.datetime.strptime(target_date, '%d.%m.%Y')
+            except ValueError:
+                bot.send_message(chat_id, f"Ошибка: Некорректная дата {target_date}.", reply_markup=back_button)
+                target_date = None
+                return
+        else:
+            target_date = current_date
+            
+        # Получаем расписание для указанной даты и группы
+        schedule_cab = get_shed_by_cab(target_date, cabinet)
+        bot.send_message(chat_id, f"{schedule_cab}", reply_markup=markup_pairs, parse_mode='HTML')  
+
+
 #Звонки
     
     elif re.match(r'^\s*звонки\s*$', message.text, re.IGNORECASE):
@@ -334,8 +377,8 @@ def handle_message(message):
         if chat_group is not None:
             bot.send_message(chat_id, f"У вас уже есть отслеживаемая группа: {chat_group}.\nВы хотите сменить её?", reply_markup=markup_change_group)
         else:
-            bot.send_message(chat_id, "Введите группу для отслеживания изменений или нажмите 'Назад' для выхода в меню.", reply_markup=back_button)
-            bot.register_next_step_handler(message, process_group_input, group_list)
+            sent_message = bot.send_message(chat_id, "Введите группу для отслеживания изменений или нажмите 'Назад' для выхода в меню.", reply_markup=back_button)
+            bot.register_next_step_handler(message, process_group_input, group_list, sent_message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("select_teacher:"))
@@ -361,7 +404,12 @@ def handle_select_teacher(call):
 def answer(call):
     group_list = []
     get_groups(group_list)
+    
     if call.data == 'change_group':
+        bot.delete_message(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id
+            )
 
         sent_message = bot.send_message(call.message.chat.id, 
                          "Введите группу для отслеживания изменений или нажмите 'Назад' для выхода в меню.", 
@@ -372,20 +420,17 @@ def answer(call):
                                        sent_message.message_id
                                        )
     elif call.data == "back_group":
+
         bot.edit_message_text(
             text="Действие отменено",
             chat_id=call.message.chat.id,  # Указан chat_id
             message_id=call.message.message_id,  # Указан message_id
-            reply_markup=None
-        )   
+            reply_markup= None
+        ) 
 
+        return
 # Обработка ввода группы
 def is_valid_message(message):
-
-    # Проверка на стикеры и файлы
-    if message.sticker or message.document or message.photo:
-        return False
-    
     # Проверяем, что сообщение не пустое и не состоит только из символов, стикеров, ссылок или файлов
     if message.text:
         # Если сообщение состоит только из пробелов или знаков препинания, игнорируем его
@@ -396,34 +441,25 @@ def is_valid_message(message):
         if re.match(r'http[s]?://', message.text):
             return False
         
-
+        # Проверка на стикеры и файлы
+        if message.sticker or message.document or message.photo:
+            return False
         
         return True
     return False
 
 def process_group_input(message, group_list, initial_message_id):
+    
     chat_id = message.chat.id
-
-    # Проверяем сообщение на валидность
-    if not is_valid_message(message):
-        bot.send_message(chat_id, "Неправильая форма запроса.", reply_markup=back_button)
-        bot.register_next_step_handler(message, process_group_input, group_list, initial_message_id)
-        return
-
     group = message.text.strip()
 
     notifications_status = get_notifications_status(chat_id)
 
-    group_normalized = group.replace(" ", "").replace("-", "").upper()
-    
-    if group == "Назад":
+    group_normalized = group.replace(" ", "").replace("-", "").upper() 
+
+    if group == "Назад" :
         # Изменяем изначальное сообщение
-        bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=initial_message_id-1,
-            text="Действие отменено.",
-            reply_markup=None
-        )
+
         bot.delete_message(
             chat_id=chat_id, 
             message_id=initial_message_id
@@ -431,6 +467,16 @@ def process_group_input(message, group_list, initial_message_id):
 
         # Отправляем новое сообщение с главным меню
         bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(notifications_status))
+        
+        return
+    
+        # Проверяем сообщение на валидность
+    if not is_valid_message(message):
+        bot.send_message(chat_id, "Неправильая форма запроса.", reply_markup=back_button)
+        bot.register_next_step_handler(message, process_group_input, group_list, initial_message_id)
+        return
+
+    
     else:
         # Найдем наиболее похожую группу из списка
         best_match = process.extractOne(group_normalized, group_list, scorer=fuzz.ratio)
@@ -442,28 +488,28 @@ def process_group_input(message, group_list, initial_message_id):
                 bot.send_message(chat_id, f"Группа '{matched_group}' установлена как активная для вашего чата.", reply_markup=get_main_menu(notifications_status))
                 set_group(chat_id, matched_group)
             else:
-                bot.send_message(chat_id, f"Группа '{group}' не найдена в списке.", reply_markup=back_button)
-                bot.register_next_step_handler(message, process_group_input, group_list)
+                sent_message = bot.send_message(chat_id, f"Группа '{group}' не найдена в списке.", reply_markup=back_button)
+                bot.register_next_step_handler(message, process_group_input, group_list, sent_message.message_id)
 
 # Задачи уведомлений
 
+
 def job_notify_tommorow():
-    
     date_now = datetime.datetime.now()
 
     start_hour = 9
-    end_hour = 23
-
+    end_hour = 21
     if not (start_hour <= date_now.hour < end_hour):
         return
     
     tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')  
     groups = []
+
     check_changes(tommorow,groups)
 
     for group in groups:
         chats = []
-        get_chat_notify(group, chats)
+        get_chat_notify_by_group(group, chats)
 
         if not chats or any(chat is None for chat in chats):
             continue
@@ -474,16 +520,32 @@ def job_notify_tommorow():
             bot.send_message(chat_id, f"На завтра {schedule}", parse_mode='HTML')
 
 def job_bells_tommorow():
-
+    
     date_now = datetime.datetime.now()
     tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
 
+    start_hour = 9
+    end_hour = 21
+
+    if not (start_hour <= date_now.hour < end_hour):
+        return
+
     buildings = []
-    #bells_changes
+    bells_changes(tommorow,buildings)
+
+    chats = []
+    get_chat_notify(chats)
+    for chat in chats:
+        if buildings is not None:
+            chat_id = chat[0]
+            bells = get_bells(tommorow)
+            bot.send_message(chat_id, f"Произошли изменения в расписании.\n{bells}", parse_mode='HTML')
+
 
 
 def run_scheduler():
     schedule.every(30).minutes.do(job_notify_tommorow)
+    schedule.every(30).minutes.do(job_bells_tommorow)
     while True:
         schedule.run_pending()
         time.sleep(1)

@@ -199,7 +199,7 @@ def get_shed_by_teacher(date, teacher):
 
     response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public", headers=header, params=params)
     data = response.json()
-    
+
     if not data.get('schedules'):
         return "Выходной" 
     
@@ -213,7 +213,7 @@ def get_shed_by_teacher(date, teacher):
             index = str(lesson.get('index', ''))
             cabinet = lesson.get('cabinet', '').strip() or '-'  # Если кабинет пустой, используем "-"
             subject = lesson.get('subject_name', lesson.get('message', ''))  # Используем `message`, если `subject_name` отсутствует
-            
+
             # Преобразуем номер пары в эмодзи
             index_to_emoji = {
                 "0": "0️⃣",
@@ -243,6 +243,67 @@ def get_shed_by_teacher(date, teacher):
     # Формируем результат
     for lesson in lessons_list:
         result += f"{lesson['index_emoji']} {lesson['subject']} | {lesson['cabinet']} | {lesson['group_name']}\n\n"
+
+    result += f"Дата <b>{date}</b>"
+    
+    return result
+
+def get_shed_by_cab(date, cab):    
+    header = {
+        "Accept": "application/json",
+    }
+    
+    params = {
+        "date": date,
+        "cabinet": cab
+    }
+
+    response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public", headers=header, params=params)
+    data = response.json()
+
+    if not data.get('schedules'):
+        return f"Для данного кабинета расписание отсутсвует " 
+    
+    result = f"Расписание по кабинету: {cab}\n\n"
+    lessons_list = []
+
+    for schedule in data['schedules']:
+        group_name = schedule.get('group_name', '')
+        
+        for lesson in schedule['lessons']:
+            index = str(lesson.get('index', ''))
+            subject = lesson.get('subject_name', lesson.get('message', ''))  # Используем `message`, если `subject_name` отсутствует
+            teachers = ", ".join(teacher.get('name', '') for teacher in (lesson.get('teachers') or []))
+
+            # Преобразуем номер пары в эмодзи
+            index_to_emoji = {
+                "0": "0️⃣",
+                "1": "1️⃣",
+                "2": "2️⃣",
+                "3": "3️⃣",
+                "4": "4️⃣",
+                "5": "5️⃣",
+                "6": "6️⃣",
+                "7": "7️⃣"
+            }
+            index_emoji = index_to_emoji.get(index, index)
+            
+            # Добавляем данные урока в общий список
+            if subject:
+                lessons_list.append({
+                    "index": int(index),  # Для сортировки
+                    "index_emoji": index_emoji,
+                    "subject": subject,
+                    "teacher" : teachers,
+                    "group_name": group_name
+                })
+
+    # Сортируем уроки по индексу
+    lessons_list.sort(key=lambda x: x['index'])
+
+    # Формируем результат
+    for lesson in lessons_list:
+        result += f"{lesson['index_emoji']} {lesson['subject']} | {lesson['group_name']} | {lesson['teacher']}\n\n"
 
     result += f"Дата <b>{date}</b>"
     

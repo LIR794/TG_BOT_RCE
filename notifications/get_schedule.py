@@ -14,7 +14,30 @@ db_pool = pool.SimpleConnectionPool(
     database= os.getenv('database')
 )
 
-def get_chat_notify(group, chats):
+def get_chat_notify(chats):
+
+    conn = db_pool.getconn()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """
+            SELECT chat_id FROM chat_data WHERE notifications = %s
+            """,
+            ("TRUE")
+        )
+        # Получаем все chat_id и добавляем их в список
+        chats.extend(cur.fetchall())
+
+    except Exception as e:
+        print(f"Ошибка при получении данных: {e}")
+
+    finally:
+        # Освобождаем соединение обратно в пул
+        cur.close()
+        db_pool.putconn(conn)
+
+def get_chat_notify_by_group(group, chats):
     
     conn = db_pool.getconn()
     cur = conn.cursor()
