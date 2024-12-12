@@ -326,7 +326,7 @@ def handle_message(message):
             
         # Получаем расписание для указанной даты и группы
         schedule_cab = get_shed_by_cab(target_date, cabinet)
-        bot.send_message(chat_id, f"{schedule_cab}", reply_markup=markup_pairs, parse_mode='HTML')  
+        bot.send_message(chat_id, f"{schedule_cab}", parse_mode='HTML')  
 
 
 #Звонки
