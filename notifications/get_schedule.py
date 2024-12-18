@@ -92,7 +92,21 @@ def get_change(date, group):
             "7": "7️⃣"
         }
 
-        result = f"Произошли изменения у группы {group}\n\n"
+        day_name = date.strftime("%A")
+
+        day_to_ru = {
+            "Monday": "Понедельник",
+            "Tuesday": "Вторник",
+            "Wednesday": "Среда",
+            "Thursday": "Четверг",
+            "Friday": "Пятница",
+            "Saturday": "Суббота",
+            "Sunday": "Воскресенье"
+        }
+
+        day_name = day_to_ru.get(day_name, day_name)
+
+        result = f"произошли изменения у группы {group}\n\n"
 
         # Формируем строку для каждого занятия
         for lesson in lessons:
@@ -113,7 +127,7 @@ def get_change(date, group):
             elif subject:
                 # Стандартная структура
                 result += f"{index} {subject} | {cabinet} ({teachers})\n"
-
+        result += f"\n<b>{date} ({day_name})</b>"
         return result.strip()
 
     except Exception as e:
