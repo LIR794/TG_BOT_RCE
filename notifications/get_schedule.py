@@ -1,6 +1,7 @@
+import os
+from datetime import datetime
 from psycopg2 import pool
 from dotenv import load_dotenv
-import os
 
 load_dotenv("/app/.env")
 
@@ -92,7 +93,7 @@ def get_change(date, group):
             "7": "7️⃣"
         }
 
-        day_name = date.strftime("%A")
+        day_name = datetime.strptime(date,"%d.%m.%Y").strftime("%A")
 
         day_to_ru = {
             "Monday": "Понедельник",
