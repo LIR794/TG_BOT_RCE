@@ -39,7 +39,7 @@ def get_bells(date):
     
     data = response.json()
 
-    if data.get('message'):
+    if 'message' in data:
         return "Выходной"
     
     index_to_emoji = {
