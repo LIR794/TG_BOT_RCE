@@ -12,7 +12,7 @@ from methods.messages import start_message, help_message, buildings
 from methods.db import add_chat, set_group, set_notifications, get_active_group, get_notifications_status
 from methods.pairs import get_groups, get_teachers, get_shedule, get_shed_by_teacher, get_bells, get_shed_by_cab
 from notifications.db_matcher import check_changes, bells_changes
-from notifications.get_schedule import get_chat_notify_by_group, get_chat_notify, get_change
+from notifications.get_schedule import get_chat_notify_by_group, get_chat_notify, get_schedule_change, get_bells_change
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from fuzzywuzzy import fuzz
@@ -513,7 +513,7 @@ def job_notify_tommorow():
 
         if not chats or any(chat is None for chat in chats):
             continue
-        schedule = get_change(tommorow,group) 
+        schedule = get_schedule_change(tommorow,group) 
 
         for chat in chats:
             chat_id = chat[0]
@@ -535,11 +535,12 @@ def job_bells_tommorow():
 
     chats = []
     get_chat_notify(chats)
-    for chat in chats:
-        if buildings is not None:
+    
+    if buildings:
+        bells = get_bells_change(tommorow,buildings)
+        for chat in chats:
             chat_id = chat[0]
-            bells = get_bells(tommorow)
-            bot.send_message(chat_id, f"Произошли изменения в расписании.\n{bells}", parse_mode='HTML')
+            bot.send_message(chat_id, bells, parse_mode='HTML')
 
 
 

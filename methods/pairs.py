@@ -1,5 +1,16 @@
 import requests
 
+index_to_emoji = {
+    "0": "0️⃣",
+    "1": "1️⃣",
+    "2": "2️⃣",
+    "3": "3️⃣",
+    "4": "4️⃣",
+    "5": "5️⃣",
+    "6": "6️⃣",
+    "7": "7️⃣"
+}
+
 def get_groups(groups):    
 
     header = {
@@ -42,17 +53,6 @@ def get_bells(date):
     if 'message' in data:
         return "Выходной"
     
-    index_to_emoji = {
-        "0": "0️⃣",
-        "1": "1️⃣",
-        "2": "2️⃣",
-        "3": "3️⃣",
-        "4": "4️⃣",
-        "5": "5️⃣",
-        "6": "6️⃣",
-        "7": "7️⃣"
-    }
-
     schedule_types = {
         "Основное": {},
         "Изменения": {}
@@ -97,13 +97,15 @@ def get_bells(date):
         for schedule_key, buildings in schedule_types["Основное"].items():
             buildings_list = ", ".join(sorted(buildings))
             result += f"Основное: {buildings_list}\n\n{schedule_key}\n\n"
-        result += f"<b>{date}</b>\n\n"
+        
 
     if schedule_types["Изменения"]:
         for schedule_key, buildings in schedule_types["Изменения"].items():
             buildings_list = ", ".join(sorted(buildings))
             result += f"Изменения: {buildings_list}\n\n{schedule_key}\n\n"
-
+    
+    result += f"<b>{date}</b>\n\n"
+    
     return result.strip()
 
 def get_shedule(date,group):    
@@ -147,18 +149,7 @@ def get_shedule(date,group):
             cabinet = lesson.get('cabinet', '')
             message = lesson.get('message','')
             teachers = ", ".join(teacher.get('name', '') for teacher in (lesson.get('teachers') or []))
-            
-            index_to_emoji = {
-                "0": "0️⃣",
-                "1": "1️⃣",
-                "2": "2️⃣",
-                "3": "3️⃣",
-                "4": "4️⃣",
-                "5": "5️⃣",
-                "6": "6️⃣",
-                "7": "7️⃣"
-            }
-            
+                     
             index = index_to_emoji.get(index, index)
 
             if not subject and message:
@@ -218,16 +209,6 @@ def get_shed_by_teacher(date, teacher):
             subject = lesson.get('subject_name', lesson.get('message', ''))  # Используем `message`, если `subject_name` отсутствует
 
             # Преобразуем номер пары в эмодзи
-            index_to_emoji = {
-                "0": "0️⃣",
-                "1": "1️⃣",
-                "2": "2️⃣",
-                "3": "3️⃣",
-                "4": "4️⃣",
-                "5": "5️⃣",
-                "6": "6️⃣",
-                "7": "7️⃣"
-            }
             index_emoji = index_to_emoji.get(index, index)
             
             # Добавляем данные урока в общий список
@@ -279,16 +260,6 @@ def get_shed_by_cab(date, cab):
             teachers = ", ".join(teacher.get('name', '') for teacher in (lesson.get('teachers') or []))
 
             # Преобразуем номер пары в эмодзи
-            index_to_emoji = {
-                "0": "0️⃣",
-                "1": "1️⃣",
-                "2": "2️⃣",
-                "3": "3️⃣",
-                "4": "4️⃣",
-                "5": "5️⃣",
-                "6": "6️⃣",
-                "7": "7️⃣"
-            }
             index_emoji = index_to_emoji.get(index, index)
             
             # Добавляем данные урока в общий список

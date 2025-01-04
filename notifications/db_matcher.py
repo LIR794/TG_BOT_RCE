@@ -184,7 +184,7 @@ def bells_changes(date, builds):
                     )
                     builds.append(building)
                     connection.commit()
-                    return
+            return
 
         # Если данные уже существуют, проверяем изменения
         for struc in data:
@@ -202,7 +202,7 @@ def bells_changes(date, builds):
                 (date, building)
             )
             db_schedule = cursor.fetchone()
-            #print(db_schedule)
+
             if bells_type == 'changes':
                 if not db_schedule:
                     # Группа не найдена в базе, добавляем новую
@@ -252,3 +252,9 @@ def bells_changes(date, builds):
         print(f"Ошибка при работе с базой данных: {e}")
         if connection:
             connection.rollback()
+    finally:
+        # Возвращаем соединение в пул
+        if cursor:
+            cursor.close()
+        if connection:
+            connection_pool.putconn(connection)
