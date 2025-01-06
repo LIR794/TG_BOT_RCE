@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime
 
 index_to_emoji = {
     "0": "0️⃣",
@@ -9,6 +10,16 @@ index_to_emoji = {
     "5": "5️⃣",
     "6": "6️⃣",
     "7": "7️⃣"
+}
+
+day_to_ru = {
+    "Monday": "Понедельник",
+    "Tuesday": "Вторник",
+    "Wednesday": "Среда",
+    "Thursday": "Четверг",
+    "Friday": "Пятница",
+    "Saturday": "Суббота",
+    "Sunday": "Воскресенье"
 }
 
 def get_groups(groups):    
@@ -45,6 +56,9 @@ def get_bells(date):
     params = {
         "date": date,
     }
+
+    day_name = datetime.strptime(date,"%d.%m.%Y").strftime("%A")
+    day_name = day_to_ru.get(day_name, day_name)
 
     response = requests.get("https://апи.пары.ркэ.рф/api/bells/public", headers=header, params=params)
     
@@ -104,7 +118,7 @@ def get_bells(date):
             buildings_list = ", ".join(sorted(buildings))
             result += f"Изменения: {buildings_list}\n\n{schedule_key}\n\n"
     
-    result += f"<b>{date}</b>\n\n"
+    result += f"<b>{date} ({day_name})</b>\n\n"
     
     return result.strip()
 
@@ -118,6 +132,9 @@ def get_shedule(date,group):
         "date": date,
         "group": group
     }
+
+    day_name = datetime.strptime(date,"%d.%m.%Y").strftime("%A")
+    day_name = day_to_ru.get(day_name, day_name)
 
     response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public", headers=header, params=params)
 
@@ -177,7 +194,7 @@ def get_shedule(date,group):
             result += f"{lesson['Номер пары']} {lesson['Название пары']} | {lesson['Кабинет']} (<i>{lesson['Преподаватель']}</i>)\n"
         else:
             result += f"{lesson['Номер пары']} {lesson['Название пары']}\n"
-    result += f"\n<b>{group_data['Дата']}</b>"
+    result += f"\n<b>{group_data['Дата']} ({day_name})</b>"
 
     return result
 
@@ -190,6 +207,9 @@ def get_shed_by_teacher(date, teacher):
         "date": date,
         "teacher": teacher
     }
+
+    day_name = datetime.strptime(date,"%d.%m.%Y").strftime("%A")
+    day_name = day_to_ru.get(day_name, day_name)
 
     response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public", headers=header, params=params)
     data = response.json()
@@ -228,7 +248,7 @@ def get_shed_by_teacher(date, teacher):
     for lesson in lessons_list:
         result += f"{lesson['index_emoji']} {lesson['subject']} | {lesson['cabinet']} | {lesson['group_name']}\n\n"
 
-    result += f"Дата <b>{date}</b>"
+    result += f"Дата <b>{date} ({day_name})</b>"
     
     return result
 
@@ -241,6 +261,9 @@ def get_shed_by_cab(date, cab):
         "date": date,
         "cabinet": cab
     }
+    
+    day_name = datetime.strptime(date,"%d.%m.%Y").strftime("%A")
+    day_name = day_to_ru.get(day_name, day_name)
 
     response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public", headers=header, params=params)
     data = response.json()
@@ -279,6 +302,6 @@ def get_shed_by_cab(date, cab):
     for lesson in lessons_list:
         result += f"{lesson['index_emoji']} {lesson['subject']} | {lesson['group_name']} | {lesson['teacher']}\n\n"
 
-    result += f"Дата <b>{date}</b>"
+    result += f"Дата <b>{date} ({day_name})</b>"
     
     return result
