@@ -268,7 +268,8 @@ def handle_message(message):
                 target_date = None
                 return
 
-            group_match = re.search(r'\d{2}\.\d{2}(?:\.\d{4})?\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+            group_match = re.search(rf'{message_date}\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+            
             if group_match:
                 chat_group = group_match.group(1)
         else:
@@ -331,37 +332,56 @@ def handle_message(message):
 
 #Звонки
     
-    elif re.match(r'^\s*звонки\s*$', message.text, re.IGNORECASE):
-            bot.send_message(chat_id, "Выберите нужную дату", reply_markup=markup_bells)
-    
-    elif re.match(r'звонки\s*(на?\s*)?сегодня', message.text, re.IGNORECASE):
+    elif re.match(r'^\s*звонки\s*', message.text, re.IGNORECASE):
+
         date_now = datetime.datetime.now()
-        current_date = date_now.strftime('%d.%m.%Y')
-        bells = get_bells(current_date)
-        bot.send_message(chat_id, f"{bells}", reply_markup=markup_bells, parse_mode='HTML')
+
+        if re.findall(r'сегодня', message.text, re.IGNORECASE):
     
-    elif re.match(r'звонки\s*(на?\s*)?завтра', message.text, re.IGNORECASE):
-        date_now = datetime.datetime.now()
-        tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
-        bells = get_bells(tommorow)
-        bot.send_message(chat_id, f"{bells}", reply_markup=markup_bells, parse_mode='HTML')    
+            current_date = date_now.strftime('%d.%m.%Y')
+
+            bells = get_bells(current_date)
+
+            bot.send_message(chat_id, f"{bells}", reply_markup=markup_bells, parse_mode='HTML')
+
+        elif re.findall(r'завтра', message.text, re.IGNORECASE):
+
+            tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
+
+            bells = get_bells(tommorow)
+
+            bot.send_message(chat_id, f"{bells}", reply_markup=markup_bells, parse_mode='HTML')    
+
+        else:
+
+            bot.send_message(chat_id, "Выберите нужную дату", reply_markup=markup_bells)   
 
     #Уведомления
 
-    elif message.text == "Уведомления":
-        bot.send_message(chat_id, "Включить уведомления о изменениях в расписании?", reply_markup=back_button)
-    
-    # Переключение уведомлений на основе текста кнопки
     elif re.match(r'Уведомления (выключены)', message.text, re.IGNORECASE):
+
+        bot.delete_message(
+            chat_id=chat_id, 
+            message_id=message.id
+            )
+        
         set_notifications(chat_id,True)
         new_status = "включены"
         notifications_status = True
+       
         bot.send_message(chat_id, f"Уведомления {new_status}.", reply_markup=get_main_menu(notifications_status))  # Обновляем меню
     
     elif re.match(r'Уведомления (включены)', message.text, re.IGNORECASE):
+
+        bot.delete_message(
+            chat_id=chat_id, 
+            message_id=message.id
+            )
+        
         set_notifications(chat_id,False)
         notifications_status = False
         new_status = "выключены"
+        
         bot.send_message(chat_id, f"Уведомления {new_status}.", reply_markup=get_main_menu(notifications_status))  # Обновляем меню
 
     #Информация
