@@ -194,6 +194,7 @@ def get_shedule(date,group):
             result += f"{lesson['Номер пары']} {lesson['Название пары']} | {lesson['Кабинет']} (<i>{lesson['Преподаватель']}</i>)\n"
         else:
             result += f"{lesson['Номер пары']} {lesson['Название пары']}\n"
+            
     result += f"\n<b>{group_data['Дата']} ({day_name})</b>"
 
     return result
