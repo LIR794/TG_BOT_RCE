@@ -28,8 +28,12 @@ def check_changes(date, groups_to_send):
     response = requests.get(f"https://апи.пары.ркэ.рф/api/schedules/public?date={date}", headers=header)
 
     if response.status_code != 200:
-        print(f"Ошибка при загрузке данных: {response.status_code}")
-        return
+        if (message := response.json().get('message')):
+            print("Ошибка получения изменений в расписании:",message)
+            return
+        else:
+            print(f"Ошибка при загрузке данных: {response.status_code}")
+            return
 
     data = response.json()
     last_update_changed = data['last_updated']
@@ -150,8 +154,12 @@ def bells_changes(date, builds):
     response = requests.get(f"https://апи.пары.ркэ.рф/api/bells/public?date={date}", headers=header)
 
     if response.status_code != 200:
-        print(f"Ошибка при загрузке данных: {response.status_code}")
-        return
+        if (message := response.json().get('message')):
+            print("Ошибка получения изменений в звонках:",message)
+            return
+        else:
+            print(f"Ошибка при загрузке данных: {response.status_code}")
+            return
 
     data = response.json()
     
