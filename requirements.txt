@@ -4,3 +4,4 @@ pyTelegramBotAPI
 python-dotenv
 Requests
 schedule
+python-levenshtein

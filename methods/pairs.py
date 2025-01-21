@@ -163,7 +163,7 @@ def get_shedule(date,group):
 
             index = str(lesson.get('index', ''))
             subject = lesson.get('subject_name', '')
-            cabinet = lesson.get('cabinet', '')
+            cabinet = (lesson.get('cabinet') or '')
             message = lesson.get('message','')
             teachers = ", ".join(teacher.get('name', '') for teacher in (lesson.get('teachers') or []))
                      
@@ -191,7 +191,7 @@ def get_shedule(date,group):
     result = f"<b>{group_data['Группа']}</b> {schedule_type}\n\n"
     for lesson in group_data["Расписание"]:
         if "Кабинет" in lesson and "Преподаватель" in lesson:
-            result += f"{lesson['Номер пары']} {lesson['Название пары']} | {lesson['Кабинет']} (<i>{lesson['Преподаватель']}</i>)\n"
+            result += f"{lesson['Номер пары']} {lesson['Название пары']} | {lesson['Кабинет']} | (<i>{lesson['Преподаватель']}</i>)\n"
         else:
             result += f"{lesson['Номер пары']} {lesson['Название пары']}\n"
             
@@ -226,7 +226,7 @@ def get_shed_by_teacher(date, teacher):
         
         for lesson in schedule['lessons']:
             index = str(lesson.get('index', ''))
-            cabinet = lesson.get('cabinet', '').strip() or '-'  # Если кабинет пустой, используем "-"
+            cabinet = (lesson.get('cabinet') or '')  # Если кабинет пустой, используем "-"
             subject = lesson.get('subject_name', lesson.get('message', ''))  # Используем `message`, если `subject_name` отсутствует
 
             # Преобразуем номер пары в эмодзи
