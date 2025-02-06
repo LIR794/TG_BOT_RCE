@@ -47,7 +47,7 @@ def get_chat_notify(chats):
             """
             SELECT chat_id FROM chat_data WHERE notifications = %s
             """,
-            ("TRUE")
+            (True,)
         )
         # Получаем все chat_id и добавляем их в список
         chats.extend(cur.fetchall())
@@ -70,7 +70,7 @@ def get_chat_notify_by_group(group, chats):
             """
             SELECT chat_id FROM chat_data WHERE active_group = %s AND notifications = %s
             """,
-            (group, "TRUE")
+            (group, True)
         )
         # Получаем все chat_id и добавляем их в список
         chats.extend(cur.fetchall())
