@@ -128,7 +128,7 @@ def get_schedule_change(date, group):
                 result += f"{index} {subject}\n"
             elif subject:
                 # Стандартная структура
-                result += f"{index} {subject} | {cabinet} ({teachers})\n"
+                result += f"{index} {subject} | {cabinet} | ({teachers})\n"
         result += f"\n<b>{date} ({day_name})</b>"
         return result.strip()
 
