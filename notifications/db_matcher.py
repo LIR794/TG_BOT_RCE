@@ -84,7 +84,7 @@ def check_changes(date, groups_to_send):
                 (date, group_name)
             )
             db_schedule = cursor.fetchone()
-            #print(db_schedule)
+
             if schedule_type == 'changes':
                 if not db_schedule:
                     # Группа не найдена в базе, добавляем новую
