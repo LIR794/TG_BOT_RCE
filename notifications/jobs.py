@@ -13,6 +13,7 @@ from notifications.get_schedule import (
 )
 
 def job_notify_tommorow(bot):
+    
     date_now = datetime.datetime.now()
 
     start_hour = 9

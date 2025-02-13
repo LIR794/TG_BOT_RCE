@@ -48,11 +48,6 @@ get_teachers(teachers_list := [])
 
 get_groups(group_list := [])
 
-date_now = datetime.datetime.now()
-current_date = date_now.strftime('%d.%m.%Y')
-tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
-    
-
 def start_bot(bot,message):
 
     chat_id = message.chat.id
@@ -80,7 +75,10 @@ def back_request(bot, chat_id):
     bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(chat_id, notifications_status))
 
 def teacher_request (bot,message,chat_id):
-    
+
+    date_now = datetime.datetime.now()
+    current_date = date_now.strftime('%d.%m.%Y')
+    tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
 
     teacher = None
     target_date = None 
@@ -151,6 +149,10 @@ def teacher_request (bot,message,chat_id):
 #Пары   
 def pairs_request (bot,message,chat_id):
 
+    date_now = datetime.datetime.now()
+    current_date = date_now.strftime('%d.%m.%Y')
+    tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
+
     chat_group = get_active_group(chat_id)
 
     message_date = re.search(r'(\d{2}\.\d{2})(?:\.(\d{4}))?',message.text, re.IGNORECASE)
@@ -209,6 +211,10 @@ def pairs_request (bot,message,chat_id):
 #Кабинет 
 def cab_request(bot,message,chat_id):
 
+    date_now = datetime.datetime.now()
+    current_date = date_now.strftime('%d.%m.%Y')
+    tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
+
     message_date = re.search(r'(\d{2}\.\d{2})(?:\.(\d{4}))?', message.text, re.IGNORECASE)
 
     # Определяем кабинет из сообщения
@@ -265,6 +271,10 @@ def cab_request(bot,message,chat_id):
 
 #Звонки
 def bells_request(bot,message,chat_id):
+
+    date_now = datetime.datetime.now()
+    current_date = date_now.strftime('%d.%m.%Y')
+    tommorow = (date_now + datetime.timedelta(days=1)).strftime('%d.%m.%Y')
 
     if re.findall(r'сегодня', message.text, re.IGNORECASE):
 
