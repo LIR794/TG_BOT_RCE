@@ -189,7 +189,7 @@ def pairs_request (bot,message,chat_id):
             target_date = None
             return
 
-        group_match = re.search(rf'{message_date}\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
+        group_match = re.search(rf'{target_date}\s*(?:для\s*)?([А-Яа-я0-9]+[\s\-]?[0-9]+)', message.text, re.IGNORECASE)
         
         if group_match:
             chat_group = group_match.group(1)
