@@ -89,7 +89,7 @@ def process_group_input(message, bot, group_list, initial_message_id):
             )
 
         # Отправляем новое сообщение с главным меню
-        bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(notifications_status))
+        bot.send_message(chat_id, "Вы вернулись в главное меню.", reply_markup=get_main_menu(chat_id, notifications_status))
         
         return
     
@@ -108,7 +108,7 @@ def process_group_input(message, bot, group_list, initial_message_id):
             # Если схожесть достаточна, подтверждаем установку группы
             matched_group, similarity_score = best_match
             if similarity_score > 80:  # Порог схожести (можно настроить)
-                bot.send_message(chat_id, f"Группа '{matched_group}' установлена как активная для вашего чата.", reply_markup=get_main_menu(notifications_status))
+                bot.send_message(chat_id, f"Группа '{matched_group}' установлена как активная для вашего чата.", reply_markup=get_main_menu(chat_id, notifications_status))
                 set_group(chat_id, matched_group)
             else:
                 sent_message = bot.send_message(chat_id, f"Группа '{group}' не найдена в списке.", reply_markup=markup_back)
