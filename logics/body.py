@@ -160,7 +160,7 @@ def pairs_request (bot,message,chat_id):
     if chat_group is None:
         bot.send_message(chat_id, f"У вас нет отслеживаемой группы.", reply_markup=markup_back)
         sent_message = bot.send_message(chat_id, f"Вы хотите установить её?", reply_markup=markup_set_group)
-        bot.register_next_step_handler(message, process_group_input, group_list, sent_message.message_id)
+        bot.register_next_step_handler(message, process_group_input, bot, group_list, sent_message.message_id)
         return
     
     if re.findall(r'сегодня', message.text, re.IGNORECASE):

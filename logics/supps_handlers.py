@@ -96,7 +96,7 @@ def process_group_input(message, bot, group_list, initial_message_id):
         # Проверяем сообщение на валидность
     if not is_valid_message(message):
         bot.send_message(chat_id, "Неправильая форма запроса.", reply_markup=markup_back)
-        bot.register_next_step_handler(message, process_group_input, group_list, initial_message_id)
+        bot.register_next_step_handler(message, process_group_input, bot, group_list, initial_message_id)
         return
 
     
@@ -112,7 +112,7 @@ def process_group_input(message, bot, group_list, initial_message_id):
                 set_group(chat_id, matched_group)
             else:
                 sent_message = bot.send_message(chat_id, f"Группа '{group}' не найдена в списке.", reply_markup=markup_back)
-                bot.register_next_step_handler(message, process_group_input, group_list, sent_message.message_id)
+                bot.register_next_step_handler(message, process_group_input, bot, group_list, sent_message.message_id)
 
 def select_teacher(bot,call):
 
